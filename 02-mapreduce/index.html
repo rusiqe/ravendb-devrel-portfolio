@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Map/Reduce in RavenDB</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1f2937;
+    --border: #30363d;
+    --accent: #e8a317;
+    --accent2: #3b82f6;
+    --accent3: #10b981;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --code-bg: #0d1117;
+    --radius: 12px;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Navigation bar ── */
+  #nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  #nav .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.03em;
+    color: var(--accent);
+  }
+  #nav .logo span { color: var(--muted); font-weight: 400; }
+  #nav-controls { display: flex; align-items: center; gap: 12px; }
+  #slide-counter { color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+  .nav-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+  .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .nav-btn:disabled:hover { background: var(--surface2); color: var(--text); border-color: var(--border); }
+
+  /* ── Progress bar ── */
+  #progress-bar {
+    height: 3px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  #progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.35s ease;
+  }
+
+  /* ── Slide container ── */
+  #deck {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 48px 64px;
+    opacity: 0;
+    transform: translateX(40px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+  .slide.active {
+    display: flex;
+    opacity: 1;
+    transform: translateX(0);
+  }
+  .slide.exit-left {
+    display: flex;
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+
+  /* ── Typography ── */
+  .slide-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: center;
+    letter-spacing: -0.02em;
+  }
+  h2 {
+    font-size: clamp(1.5rem, 3.5vw, 2.4rem);
+    font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
+    letter-spacing: -0.015em;
+    margin-bottom: 32px;
+  }
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    font-size: clamp(1rem, 2.2vw, 1.3rem);
+    color: var(--muted);
+    text-align: center;
+    margin-top: 16px;
+    max-width: 700px;
+    line-height: 1.6;
+  }
+  p {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--text);
+    max-width: 800px;
+  }
+  .accent { color: var(--accent); font-weight: 600; }
+  .accent2 { color: var(--accent2); font-weight: 600; }
+  .accent3 { color: var(--accent3); font-weight: 600; }
+
+  /* ── Layout helpers ── */
+  .cols-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+    max-width: 1100px;
+  }
+  .cols-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    max-width: 1100px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .card.highlight { border-color: var(--accent); }
+  .card.blue { border-color: var(--accent2); }
+  .card.green { border-color: var(--accent3); }
+
+  /* ── Lists ── */
+  ul { list-style: none; padding: 0; max-width: 800px; width: 100%; }
+  ul li {
+    padding: 9px 0 9px 28px;
+    position: relative;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+  ul li:last-child { border-bottom: none; }
+  ul li::before {
+    content: '▸';
+    position: absolute;
+    left: 4px;
+    color: var(--accent);
+    font-size: 0.8rem;
+  }
+
+  /* ── Code blocks ── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.65;
+    overflow-x: auto;
+    text-align: left;
+    width: 100%;
+    max-width: 900px;
+  }
+  code { font-family: var(--font-mono); }
+
+  /* Syntax colours (manual) */
+  .kw  { color: #ff7b72; }   /* keyword */
+  .ty  { color: #79c0ff; }   /* type / class */
+  .fn  { color: #d2a8ff; }   /* method / function */
+  .st  { color: #a5d6ff; }   /* string */
+  .cm  { color: #8b949e; font-style: italic; } /* comment */
+  .nu  { color: #f78166; }   /* number */
+  .op  { color: #e6edf3; }   /* operator / punctuation */
+  .id  { color: #e6edf3; }   /* identifier */
+  .ann { color: var(--accent3); } /* RavenDB keyword/annotation */
+
+  /* ── Pipeline diagram ── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    max-width: 900px;
+    width: 100%;
+    margin-top: 8px;
+  }
+  .pipe-step {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 16px;
+    text-align: center;
+  }
+  .pipe-step.map-col { border-color: var(--accent2); }
+  .pipe-step.reduce-col { border-color: var(--accent3); }
+  .pipe-step.result-col { border-color: var(--accent); }
+  .pipe-icon { font-size: 1.8rem; margin-bottom: 8px; }
+  .pipe-title { font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; }
+  .pipe-desc { font-size: 0.75rem; color: var(--muted); line-height: 1.4; }
+  .pipe-arrow {
+    padding: 0 8px;
+    color: var(--muted);
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  /* ── Analogy box ── */
+  .analogy-box {
+    background: linear-gradient(135deg, #1a2332 0%, #1a2a1a 100%);
+    border: 1px solid var(--accent3);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    max-width: 800px;
+    text-align: center;
+  }
+  .analogy-box .emoji { font-size: 2.5rem; margin-bottom: 12px; }
+  .analogy-box p { color: var(--text); font-size: 1rem; line-height: 1.7; }
+
+  /* ── Comparison table ── */
+  .compare-table {
+    width: 100%;
+    max-width: 800px;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  .compare-table th {
+    padding: 10px 16px;
+    background: var(--surface2);
+    color: var(--accent);
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+  .compare-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+  }
+  .compare-table tr:hover td { background: var(--surface); }
+
+  /* ── Title slide gradient ── */
+  .slide.title-slide {
+    background: radial-gradient(ellipse at 60% 40%, #1a2332 0%, var(--bg) 70%);
+  }
+  .title-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(232, 163, 23, 0.12);
+    border: 1px solid rgba(232, 163, 23, 0.3);
+    color: var(--accent);
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  /* ── Tag pills ── */
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+
+  /* ── Slide-specific ── */
+  #slide-8 .card p { font-size: 0.9rem; line-height: 1.6; color: var(--muted); margin-top: 6px; }
+
+  /* ── Keyboard hints ── */
+  #kb-hint {
+    position: fixed;
+    bottom: 12px;
+    right: 20px;
+    color: var(--muted);
+    font-size: 0.7rem;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="nav">
+  <div class="logo">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" stroke="#e8a317" stroke-width="1.8" fill="none"/>
+      <path d="M2 7l10 5 10-5" stroke="#e8a317" stroke-width="1.8" fill="none"/>
+      <path d="M12 12v10" stroke="#e8a317" stroke-width="1.8"/>
+    </svg>
+    RavenDB <span>/ Map·Reduce Deep Dive</span>
+  </div>
+  <div id="nav-controls">
+    <span id="slide-counter">1 / 9</span>
+    <button class="nav-btn" id="btn-prev" disabled>← Prev</button>
+    <button class="nav-btn" id="btn-next">Next →</button>
+  </div>
+</div>
+
+<div id="progress-bar"><div id="progress-fill" style="width:11.11%"></div></div>
+
+<div id="deck">
+
+  <!-- ══════════════════════════════════════════════
+       SLIDE 1 — Title
+  ══════════════════════════════════════════════ -->
+  <div class="slide title-slide active" id="slide-1">
+    <div class="title-badge">Technical Deep Dive</div>
+    <h1>Map / Reduce<br/>in <span class="accent">RavenDB</span></h1>
+    <p class="subtitle">How aggregation moves out of query time and into the index — and why that changes everything</p>
+    <div class="tags" style="justify-content:center; margin-top:32px;">
+      <span class="tag">Indexes</span>
+      <span class="tag">Aggregation</span>
+      <span class="tag">Multi-Map</span>
+      <span class="tag">OutputReduceToCollection</span>
+      <span class="tag">C# · RQL</span>
+      <span class="tag">RavenDB 7.x</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SLIDE 2 — The Problem
+  ══════════════════════════════════════════════ -->
+  <div class="slide" id="slide-2">
+    <div class="slide-label">The Problem</div>
+    <h2>Aggregation Is <span class="accent">Expensive</span></h2>
+    <div class="cols-2" style="max-width:900px;">
+      <div class="card">
+        <h3>Traditional approach</h3>
+        <ul>
+          <li>Scan a collection at query time</li>
+          <li>Group, count, sum — for every request</li>
+          <li>More data → slower queries</li>
+          <li>Popular items hit the hardest</li>
+          <li>Workaround: background jobs + caching + cache invalidation + delay…</li>
+        </ul>
+      </div>
+      <div class="card highlight">
+        <h3>The insight</h3>
+        <p style="margin-bottom:14px;">What if aggregation happened <strong>incrementally</strong>, as documents change — not all at once when you query?</p>
+        <p>You'd pay a small cost per write, and then reads would be <strong class="accent3">instant</strong> regardless of dataset size.</p>
+        <p style="margin-top:14px; color:var(--muted); font-size:0.88rem;">That's exactly what Map/Reduce indexes do.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SLIDE 3 — What is Map/Reduce?
+  ══════════════════════════════════════════════ -->
+  <div class="slide" id="slide-3">
+    <div class="slide-label">Concept</div>
+    <h2>What Is <span class="accent">Map / Reduce</span>?</h2>
+    <div class="analogy-box" style="margin-bottom:28px;">
+      <div class="emoji">📦</div>
+      <p><strong>Analogy:</strong> Imagine a warehouse counting inventory. Instead of one person counting everything at the end of the day, every worker <em>maps</em> their section — "I have 5 red boxes" — and a supervisor <em>reduces</em> all reports into a total. Change one box? Only that section re-reports.</p>
+    </div>
+    <div class="pipeline">
+      <div class="pipe-step map-col">
+        <div class="pipe-icon">📄</div>
+        <div class="pipe-title" style="color:var(--accent2);">MAP</div>
+        <div class="pipe-desc">Run a function over each document. Extract and emit intermediate key-value pairs.</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step reduce-col">
+        <div class="pipe-icon">⚙️</div>
+        <div class="pipe-title" style="color:var(--accent3);">REDUCE</div>
+        <div class="pipe-desc">Group by key. Aggregate the intermediate results into a final value per group.</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step result-col">
+        <div class="pipe-icon">⚡</div>
+        <div class="pipe-title" style="color:var(--accent);">QUERY</div>
+        <div class="pipe-desc">Reads hit pre-computed results. Zero aggregation cost at query time.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SLIDE 4 — RavenDB's approach
+  ══════════════════════════════════════════════ -->
+  <div class="slide" id="slide-4">
+    <div class="slide-label">Architecture</div>
+    <h2>How RavenDB Does It <span class="accent">Differently</span></h2>
+    <div class="cols-2" style="max-width:1000px;">
+      <div class="card blue">
+        <h3 style="color:var(--accent2);">Traditional MapReduce (Hadoop-style)</h3>
+        <ul>
+          <li>Distributes work across a cluster</li>
+          <li>Batch jobs — runs periodically</li>
+          <li>Results are stale until the next run</li>
+          <li>Designed for petabyte-scale ETL</li>
+        </ul>
+      </div>
+      <div class="card highlight">
+        <h3>RavenDB Map/Reduce</h3>
+        <ul>
+          <li>Runs <strong>on each node independently</strong></li>
+          <li>Triggered <strong>incrementally</strong> on every write</li>
+          <li>Results are <strong>always fresh</strong></li>
+          <li>Designed for <strong>real-time query serving</strong></li>
+        </ul>
+      </div>
+    </div>
+    <p style="margin-top:24px; color:var(--muted); text-align:center; font-size:0.9rem;">
+      RavenDB uses MapReduce to <em>break computation across time</em>, not across machines.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SLIDE 5 — Basic Map/Reduce Index (C#)
+  ══════════════════════════════════════════════ -->
+  <div class="slide" id="slide-5">
+    <div class="slide-label">Code Example</div>
+    <h2>Basic Map/Reduce Index</h2>
+    <pre><code><span class="cm">// C# — Count products per category</span>
+<span class="kw">public class</span> <span class="ty">Products_ByCategory</span>
+    : <span class="ty">AbstractIndexCreationTask</span>&lt;<span class="ty">Product</span>, <span class="ty">Products_ByCategory.Result</span>&gt;
+{
+    <span class="kw">public class</span> <span class="ty">Result</span> { <span class="kw">public string</span> <span class="id">Category</span>; <span class="kw">public int</span> <span class="id">Count</span>; }
+
+    <span class="kw">public</span> <span class="fn">Products_ByCategory</span>()
+    {
+        <span class="cm">// MAP — run once per document</span>
+        <span class="id">Map</span> = products =&gt; <span class="kw">from</span> p <span class="kw">in</span> products
+                          <span class="kw">select new</span> <span class="ty">Result</span> {
+                              Category = <span class="ann">LoadDocument</span>&lt;<span class="ty">Category</span>&gt;(p.Category).Name,
+                              Count    = <span class="nu">1</span>
+                          };
+
+        <span class="cm">// REDUCE — aggregate the mapped values</span>
+        <span class="id">Reduce</span> = results =&gt; <span class="kw">from</span> r <span class="kw">in</span> results
+                            <span class="kw">group</span> r <span class="kw">by</span> r.Category <span class="kw">into</span> g
+                            <span class="kw">select new</span> <span class="ty">Result</span> {
+                                Category = g.Key,
+                                Count    = g.<span class="fn">Sum</span>(x =&gt; x.Count)
+                            };
+    }
+}
+
+<span class="cm">// RQL query — reads pre-computed results, no scan</span>
+<span class="ann">from index</span> <span class="st">'Products/ByCategory'</span>
+<span class="ann">order by</span> Count <span class="ann">desc</span></code></pre>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SLIDE 6 — Multi-Map/Reduce
+  ══════════════════════════════════════════════ -->
+  <div class="slide" id="slide-6">
+    <div class="slide-label">Advanced Feature</div>
+    <h2>Multi-Map / Reduce</h2>
+    <p style="text-align:center; margin-bottom:20px; color:var(--muted);">Aggregate across <strong>multiple collections</strong> in a single index — unified, consistent results.</p>
+    <pre><code><span class="cm">// Count Companies, Suppliers, and Employees per City</span>
+<span class="kw">public class</span> <span class="ty">Cities_Details</span>
+    : <span class="ty">AbstractMultiMapIndexCreationTask</span>&lt;<span class="ty">Cities_Details.IndexEntry</span>&gt;
+{
+    <span class="kw">public class</span> <span class="ty">IndexEntry</span> {
+        <span class="kw">public string</span> <span class="id">City</span>; <span class="kw">public int</span> <span class="id">Companies</span>, <span class="id">Employees</span>, <span class="id">Suppliers</span>;
+    }
+    <span class="kw">public</span> <span class="fn">Cities_Details</span>() {
+        <span class="fn">AddMap</span>&lt;<span class="ty">Employee</span>&gt;(e  =&gt; e.<span class="fn">Select</span>(x =&gt; <span class="kw">new</span> { City = x.Address.City, Companies=<span class="nu">0</span>, Employees=<span class="nu">1</span>, Suppliers=<span class="nu">0</span> }));
+        <span class="fn">AddMap</span>&lt;<span class="ty">Company</span>&gt;(c   =&gt; c.<span class="fn">Select</span>(x =&gt; <span class="kw">new</span> { City = x.Address.City, Companies=<span class="nu">1</span>, Employees=<span class="nu">0</span>, Suppliers=<span class="nu">0</span> }));
+        <span class="fn">AddMap</span>&lt;<span class="ty">Supplier</span>&gt;(s  =&gt; s.<span class="fn">Select</span>(x =&gt; <span class="kw">new</span> { City = x.Address.City, Companies=<span class="nu">0</span>, Employees=<span class="nu">0</span>, Suppliers=<span class="nu">1</span> }));
+
+        Reduce = results =&gt; <span class="kw">from</span> r <span class="kw">in</span> results
+                            <span class="kw">group</span> r <span class="kw">by</span> r.City <span class="kw">into</span> g
+                            <span class="kw">select new</span> <span class="ty">IndexEntry</span> {
+                                City      = g.Key,
+                                Companies = g.<span class="fn">Sum</span>(x =&gt; x.Companies),
+                                Employees = g.<span class="fn">Sum</span>(x =&gt; x.Employees),
+                                Suppliers = g.<span class="fn">Sum</span>(x =&gt; x.Suppliers)
+                            };
+    }
+}</code></pre>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SLIDE 7 — OutputReduceToCollection
+  ══════════════════════════════════════════════ -->
+  <div class="slide" id="slide-7">
+    <div class="slide-label">Advanced Feature</div>
+    <h2><span class="accent">OutputReduceToCollection</span></h2>
+    <div class="cols-2" style="max-width:1000px; align-items:start;">
+      <div>
+        <p style="margin-bottom:16px;">Reduce results can be materialized as <strong>real documents</strong> in a named collection — enabling recursive aggregations, subscriptions, and ETL on top of the aggregated data.</p>
+        <pre style="max-width:100%;"><code><span class="cm">// Write daily sales summaries as documents</span>
+<span class="kw">public class</span> <span class="ty">DailySales</span>
+    : <span class="ty">AbstractIndexCreationTask</span>&lt;<span class="ty">Order</span>, <span class="ty">DailySales.Result</span>&gt;
+{
+    <span class="kw">public</span> <span class="fn">DailySales</span>() {
+        Map = orders =&gt; <span class="kw">from</span> o <span class="kw">in</span> orders
+                        <span class="kw">select new</span> {
+                            Date    = o.OrderedAt.Date,
+                            Revenue = o.Lines.<span class="fn">Sum</span>(l =&gt; l.PricePerUnit * l.Quantity),
+                            Count   = <span class="nu">1</span>
+                        };
+        Reduce = results =&gt; <span class="kw">from</span> r <span class="kw">in</span> results
+                            <span class="kw">group</span> r <span class="kw">by</span> r.Date <span class="kw">into</span> g
+                            <span class="kw">select new</span> {
+                                Date    = g.Key,
+                                Revenue = g.<span class="fn">Sum</span>(x =&gt; x.Revenue),
+                                Count   = g.<span class="fn">Sum</span>(x =&gt; x.Count)
+                            };
+
+        <span class="cm">// ✨ Output to a real collection</span>
+        <span class="ann">OutputReduceToCollection</span> = <span class="st">"DailySalesResults"</span>;
+        PatternForOutputReduceToCollectionReferences
+            = r =&gt; <span class="st">$"sales/daily/{r.Date:yyyy-MM-dd}"</span>;
+    }
+}</code></pre>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="card green">
+          <h3 style="color:var(--accent3);">What you can do with output docs</h3>
+          <ul>
+            <li>Index them again → recursive roll-ups (daily → monthly → yearly)</li>
+            <li>Run data subscriptions on them (real-time consumers)</li>
+            <li>Apply ETL to push to external systems</li>
+            <li>Query them directly like normal documents</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Document ID format</h3>
+          <p style="font-size:0.85rem; color:var(--muted); font-family:var(--font-mono); margin-top:6px;">DailySalesResults/<wbr>35/<wbr>14369232530304891504</p>
+          <p style="font-size:0.8rem; color:var(--muted); margin-top:8px;"><code>Collection / Incrementing# / Hash(reduce key)</code></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SLIDE 8 — Use Cases
+  ══════════════════════════════════════════════ -->
+  <div class="slide" id="slide-8">
+    <div class="slide-label">Real-World Use Cases</div>
+    <h2>Where Map/Reduce <span class="accent">Shines</span></h2>
+    <div class="cols-3">
+      <div class="card">
+        <h3>📊 Dashboards & Analytics</h3>
+        <p>Revenue by region, orders per day, customer rankings — always pre-computed, served in microseconds.</p>
+      </div>
+      <div class="card blue">
+        <h3>🏷️ Inventory & Catalog</h3>
+        <p>Count products per category, track stock levels by warehouse — consistent across millions of SKUs.</p>
+      </div>
+      <div class="card green">
+        <h3>📅 Time-Series Roll-ups</h3>
+        <p>Daily → monthly → yearly summaries via chained <code>OutputReduceToCollection</code> indexes.</p>
+      </div>
+      <div class="card">
+        <h3>🏙️ Cross-Collection Stats</h3>
+        <p>Multi-Map indexes: combine Employees, Companies, Suppliers into one unified view per city.</p>
+      </div>
+      <div class="card blue">
+        <h3>📦 Order Intelligence</h3>
+        <p>Revenue per product, order frequency per customer — queries that would normally require heavy GROUP BY scans.</p>
+      </div>
+      <div class="card green">
+        <h3>🔄 Event Sourcing</h3>
+        <p>Maintain live read-model projections from event streams without a separate projections service.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SLIDE 9 — Why RavenDB's Approach Is Unique
+  ══════════════════════════════════════════════ -->
+  <div class="slide" id="slide-9">
+    <div class="slide-label">Summary</div>
+    <h2>Why RavenDB's Map/Reduce Is <span class="accent">Unique</span></h2>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Traditional DB</th>
+          <th>RavenDB</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Aggregation cost at query time</td>
+          <td style="color:#f78166;">High — full scan</td>
+          <td style="color:var(--accent3);">Zero — pre-computed</td>
+        </tr>
+        <tr>
+          <td>Result freshness</td>
+          <td style="color:#f78166;">Stale (cache/batch job)</td>
+          <td style="color:var(--accent3);">Always current (incremental)</td>
+        </tr>
+        <tr>
+          <td>Multi-collection aggregation</td>
+          <td style="color:#f78166;">Complex JOINs</td>
+          <td style="color:var(--accent3);">Multi-Map index — built in</td>
+        </tr>
+        <tr>
+          <td>Recursive roll-ups</td>
+          <td style="color:#f78166;">Separate jobs / ETL</td>
+          <td style="color:var(--accent3);">OutputReduceToCollection chains</td>
+        </tr>
+        <tr>
+          <td>Output as queryable documents</td>
+          <td style="color:#f78166;">Not natively</td>
+          <td style="color:var(--accent3);">Yes — full document operations</td>
+        </tr>
+        <tr>
+          <td>Infrastructure required</td>
+          <td style="color:#f78166;">Hadoop cluster / background workers</td>
+          <td style="color:var(--accent3);">Built into the database engine</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin-top:24px; text-align:center; color:var(--muted); font-size:0.9rem;">
+      RavenDB turns expensive aggregation into a <span class="accent">first-class, zero-cost query primitive</span> — no background jobs, no caches, no stale data.
+    </p>
+  </div>
+
+</div><!-- #deck -->
+
+<div id="kb-hint">← → Arrow keys to navigate</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total  = slides.length;
+  let   cur    = 0;
+
+  const btnPrev    = document.getElementById('btn-prev');
+  const btnNext    = document.getElementById('btn-next');
+  const counter    = document.getElementById('slide-counter');
+  const progFill   = document.getElementById('progress-fill');
+
+  function go(to) {
+    if (to < 0 || to >= total) return;
+
+    const leaving = slides[cur];
+    leaving.classList.remove('active');
+    leaving.classList.add(to > cur ? 'exit-left' : '');
+    setTimeout(() => leaving.classList.remove('exit-left'), 380);
+
+    cur = to;
+    const arriving = slides[cur];
+    arriving.classList.add('active');
+
+    counter.textContent   = `${cur + 1} / ${total}`;
+    progFill.style.width  = `${((cur + 1) / total) * 100}%`;
+    btnPrev.disabled      = cur === 0;
+    btnNext.disabled      = cur === total - 1;
+  }
+
+  btnPrev.addEventListener('click', () => go(cur - 1));
+  btnNext.addEventListener('click', () => go(cur + 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown')  go(cur + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    go(cur - 1);
+  });
+
+  // Touch/swipe
+  let tx = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+  document.addEventListener('touchend',   e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 50) go(dx < 0 ? cur + 1 : cur - 1);
+  });
+</script>
+</body>
+</html>
