@@ -1,6 +1,6 @@
 # Your Database Already Has a Vector Search Engine. You Just Haven't Used It Yet.
 
-Most developers bolt on a vector store after the fact. Pinecone here, Weaviate there, a sync job duct-taped in between. It works — until it doesn't. Here's a better way.
+Most developers bolt on a vector store after the fact. Pinecone here, Weaviate there, a sync job duct-taped in between. It works until it doesn't. Here's a better way.
 
 ---
 
@@ -8,52 +8,69 @@ Most developers bolt on a vector store after the fact. Pinecone here, Weaviate t
 
 Let's be honest about what traditional search actually does: it matches characters. You search for "fast," you get back documents that contain the string "fast." That's the whole trick.
 
-Which is fine — until you realize that "high-performance," "low-latency," and "quick processing pipelines" all mean roughly the same thing, and keyword search has absolutely no idea. It won't connect those dots for you. It's not stupid, it's just operating on the wrong abstraction.
+Which is fine until you realize that "high-performance," "low-latency," and "quick processing pipelines" all mean roughly the same thing, and keyword search has no idea. It won't connect those dots. It's not stupid — it's just operating on the wrong abstraction.
 
 That's the gap semantic search fills.
 
-Semantic search works on *meaning*, not *words*. And the mechanism that makes that possible is something called an **embedding**.
+Semantic search works on *meaning*, not words. The mechanism that makes this possible is something called an **embedding**.
 
 ---
 
-## What Embeddings Actually Are
+## What Embeddings Are
 
-An embedding is a way of representing text as a list of numbers — a vector — that encodes what that text *means* rather than how it's spelled. Feed "fast car" and "high-speed vehicle" into a good embedding model, and you'll get back two vectors that are close to each other in multi-dimensional space. Feed in "fast car" and "tax policy," and those vectors will be far apart.
+An embedding represents text as a list of numbers — a vector — that encodes what that text *means* rather than how it's spelled. Feed "fast car" and "high-speed vehicle" into a good embedding model and you'll get back two vectors that sit close to each other in multi-dimensional space. Feed in "fast car" and "tax policy" and those vectors will be far apart.
 
 That distance becomes your search signal. Instead of asking "does this document contain this word?", you're asking "is this document *close in meaning* to my query?"
 
-That's the shift from keyword search to semantic search. It's conceptually simple. The implementation is where things get interesting.
+That's the shift from keyword search to semantic search. Simple concept; the implementation is what gets interesting.
 
 ---
 
-## How RavenDB Does It
+## How RavenDB Implements It
 
-Starting with **RavenDB 7.0**, vector search is built directly into the database. Not as a plugin. Not as a sidecar. It's part of the core indexing engine.
+Starting with **RavenDB 7.0**, vector search is built directly into the database. Not a plugin. Not a sidecar. It's part of the core indexing engine.
 
-Under the hood, RavenDB uses **Corax** — its indexing engine — to build an **HNSW graph** (Hierarchical Navigable Small World). HNSW is one of the best-performing algorithms for approximate nearest neighbor search. It's fast, it scales to millions of vectors, and it doesn't require you to load everything into memory.
+Under the hood, RavenDB uses **Corax** — its indexing engine — to build an **HNSW graph** (Hierarchical Navigable Small World). HNSW is one of the strongest algorithms for approximate nearest neighbor search. It scales to millions of vectors and doesn't require loading everything into memory.
 
-The result: you get vector search where your data already lives. No sync jobs. No consistency headaches. No extra infrastructure to manage.
+You get vector search where your data already lives. No sync jobs, no consistency headaches, no extra infrastructure.
 
 ---
 
-## Dynamic Queries vs. Static Indexes
+## Where Embeddings Come From
 
-There are two ways to use vector search in RavenDB, and they serve different purposes.
+Before looking at queries, it helps to understand how RavenDB generates embeddings in the first place. When defining a static index, you configure the embedding provider once and RavenDB handles generation and updates from there. It integrates with:
+
+- **OpenAI** (text-embedding-3-small, text-embedding-3-large, etc.)
+- **Azure OpenAI**
+- **Hugging Face**
+- **Google AI**
+- **Ollama** (for local models)
+- **Mistral**
+
+The most interesting option, though, requires none of these. RavenDB ships with **bge-micro-v2** built in — a compact embedding model that runs entirely inside the database process. No API key. No network call. No rate limits. If you want semantic search today, you can have it without signing up for anything.
+
+For internal search, smaller datasets, or privacy-sensitive applications, it's all you need.
+
+---
+
+## Two Ways to Query
+
+There are two ways to run vector search in RavenDB, and they serve different purposes.
 
 ### Dynamic Queries
 
-The fast path. Write a query, RavenDB creates the index automatically. Great for prototyping and exploration:
+The fast path. Write a query and RavenDB creates the index automatically — useful for prototyping and exploration:
 
 ```rql
 from Products
 where vector.search(Description, "high performance computing solutions")
 ```
 
-RavenDB handles the embedding generation and index creation behind the scenes. You just write the query.
+Embedding generation and index creation happen behind the scenes. You just write the query.
 
 ### Static Indexes
 
-When you want explicit control — define your vector field up front, configure the HNSW parameters, and get predictable, production-ready performance:
+For explicit control, define your vector field upfront, configure the HNSW parameters, and get predictable production performance:
 
 ```rql
 from index 'Products/ByDescriptionVector'
@@ -62,7 +79,7 @@ order by score() desc
 limit 10
 ```
 
-Static indexes also let you mix vector search with structured filters in the same query:
+Static indexes also support mixing vector search with structured filters in a single query:
 
 ```rql
 from index 'Products/ByDescriptionVector'
@@ -72,13 +89,31 @@ and Price between 50 and 500
 order by score() desc
 ```
 
-That last one is the killer feature for real applications — semantic relevance *combined* with hard filters, in a single query, against a single system.
+Semantic relevance combined with hard filters, one query, one system. That's the one that matters for real applications.
 
 ---
 
-## Using It From Python
+## The Operational Argument
 
-The RavenDB Python client exposes raw RQL queries through `session.advanced.raw_query()`. Combining that with `vector.search()` looks like this ([full source on GitHub](https://github.com/rusiqe/ravendb-devrel-portfolio/blob/main/04-demo/search.py)):
+The standard approach to adding vector search goes like this: spin up a separate vector database, write a sync pipeline, figure out how to keep both systems consistent, then manage that forever.
+
+That's a real maintenance burden. Two systems means two failure modes, two scaling strategies, and eventual consistency problems that surface at the worst time.
+
+With RavenDB, your operational database *is* your vector store. When a document updates, the vector index updates. You're not orchestrating two systems — you're running one. That matters most in:
+
+- **Search engines** — semantic relevance over your own content
+- **Recommendation systems** — find items similar to what a user engaged with
+- **RAG pipelines** — retrieve the right context chunks before sending to an LLM
+
+In all of these scenarios, you want your retrieval layer next to your data, not three network hops away.
+
+---
+
+## Building With It
+
+To see this in practice, I built a [product catalog demo](https://github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo) — 50 products seeded into RavenDB, searchable via a Python CLI using `vector.search()` with the built-in bge-micro-v2 model.
+
+On the Python side, the RavenDB client exposes raw RQL through `session.advanced.raw_query()`. The whole search function is lean ([full source](https://github.com/rusiqe/ravendb-devrel-portfolio/blob/main/04-demo/search.py)):
 
 ```python
 with store.open_session() as session:
@@ -97,23 +132,9 @@ with store.open_session() as session:
     )
 ```
 
-No embedding library. No separate vector client. Just an RQL query with a parameterised `vector.search()` call — the same session interface you'd use for any other RavenDB query.
+No embedding library. No separate vector client. The same session interface used for any other RavenDB query. Adding a category filter is one extra `and` clause in the RQL — the structured filter and vector search execute together inside RavenDB, no post-filtering on the client.
 
-Adding a category filter is one line ([search.py#L49–55](https://github.com/rusiqe/ravendb-devrel-portfolio/blob/main/04-demo/search.py#L49)):
-
-```python
-        """
-        from Products
-        where vector.search(Description, $query)
-        and Category = $category
-        order by score() desc
-        limit $limit
-        """
-```
-
-The structured filter and the vector search execute together inside RavenDB — there's no post-filtering step on the client.
-
-Getting your data in is equally straightforward. RavenDB's bulk insert API handles everything; embeddings are generated automatically when queries arrive ([seed.py on GitHub](https://github.com/rusiqe/ravendb-devrel-portfolio/blob/main/04-demo/seed.py)):
+Seeding the data is just a bulk insert ([seed.py](https://github.com/rusiqe/ravendb-devrel-portfolio/blob/main/04-demo/seed.py)). No schema changes, no pre-computation step:
 
 ```python
 with store.bulk_insert() as bulk:
@@ -121,54 +142,7 @@ with store.bulk_insert() as bulk:
         bulk.store_as(product, product.id)
 ```
 
-No schema changes. No embedding pre-computation step. Store your documents as you normally would and let RavenDB handle the vector layer.
-
----
-
-## Embedding Providers and the Built-In Model
-
-When defining a static index, you have full control over how embeddings get generated. RavenDB integrates directly with:
-
-- **OpenAI** (text-embedding-3-small, text-embedding-3-large, etc.)
-- **Azure OpenAI**
-- **Hugging Face**
-- **Google AI**
-- **Ollama** (for local models)
-- **Mistral**
-
-You configure the provider once on the index, and RavenDB handles the rest — including keeping embeddings up to date as your documents change.
-
-But the option I find most interesting? **Zero external dependencies.**
-
-RavenDB ships with `bge-micro-v2` built in. It's a compact, capable embedding model that runs entirely inside the database process. No API key. No network call. No rate limits. If you want to get started with semantic search today, you can do it without signing up for anything.
-
-For many use cases — internal search, smaller datasets, privacy-sensitive applications — it's all you need.
-
----
-
-## Why This Actually Matters
-
-The standard approach to adding vector search to your stack goes something like this: spin up a separate vector database, write a pipeline to sync your data into it, figure out how to keep them consistent, and then manage two systems in production forever.
-
-That's a real cost. Operational complexity isn't free.
-
-RavenDB's approach is different. Your operational database *is* your vector store. Same system. Same data. Same query interface. When a document updates, the vector index updates. You're not running two separate systems with a sync job in between — you're running one.
-
-This matters most when you're building things like:
-
-- **Search engines** — semantic relevance over your own content
-- **Recommendation systems** — find items similar to what a user has already engaged with
-- **RAG pipelines** — retrieve the right context chunks before sending them to an LLM
-
-In all of these, you want your AI-powered retrieval layer right next to your data. Not three hops away.
-
----
-
-## Seeing It in Practice
-
-To make this concrete, I built a [small demo](https://github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo): a 50-product catalog seeded into RavenDB, searchable via a Python CLI using `vector.search()` with the built-in bge-micro-v2 model.
-
-The most interesting part of building it was watching what keyword search would have missed. These queries contain *no shared words* with the products they return:
+The revealing part was running queries that share zero words with their matching products:
 
 | Query | Keyword result | Semantic result (RavenDB) |
 |---|---|---|
@@ -179,21 +153,17 @@ The most interesting part of building it was watching what keyword search would 
 | "muscle recovery after a run" | 0 results | TriggerPoint Foam Roller |
 | "books for becoming a better programmer" | 0 results | Clean Code, Designing Data-Intensive Apps |
 
-Every one of these is a query that a real user would type. None of them would return a single result from a keyword-based system. All of them work with `vector.search()` on a plain text description field, with zero configuration beyond installing RavenDB.
+Every query in that table is something a real user would type. None of them share a single word with the product description that matched. That's the gap keyword search leaves open, and it's sitting right there in your existing data.
 
-The demo also shows the combined filter in action — `vector.search(Description, "muscle recovery after a run") and Category = "Fitness"` — which is where you'd use this in a real application: semantic relevance scoped to a category, price range, brand, or any other structured attribute. One query. One system.
-
-You can clone the demo and have it running in under five minutes: [github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo](https://github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo).
+Clone the demo and have it running in under five minutes: [github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo](https://github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo).
 
 ---
 
 ## Try It
 
-If you're already running RavenDB 7.0, you can start with a dynamic query right now — no configuration required. If you want to go further, the [RavenDB documentation on vector search](https://ravendb.net/docs) walks through defining static indexes and configuring embedding providers.
+If you're on RavenDB 7.0, a dynamic query is enough to get started — no index configuration required. The [RavenDB docs on vector search](https://ravendb.net/docs) cover static indexes and embedding provider configuration when you're ready to go further.
 
-For a working example with Python client code you can run locally, the [demo project](https://github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo) has everything: seed script, search CLI, and 50 products chosen specifically to show where semantic search beats keyword search.
-
-The infrastructure problem is already solved. What are you going to build with it?
+The infrastructure question is already answered. What are you going to build with it?
 
 ---
 
