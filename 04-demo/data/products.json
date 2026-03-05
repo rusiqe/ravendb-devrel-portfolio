@@ -1,0 +1,352 @@
+[
+  {
+    "id": "products/1",
+    "name": "Sony WH-1000XM5 Headphones",
+    "category": "Electronics",
+    "price": 349.99,
+    "description": "Industry-leading wireless noise cancellation headphones with 30-hour battery life, multipoint connection for two devices simultaneously, and crystal-clear hands-free calling. Perfect for long work sessions or travel."
+  },
+  {
+    "id": "products/2",
+    "name": "Keychron K2 Mechanical Keyboard",
+    "category": "Electronics",
+    "price": 89.99,
+    "description": "Compact tenkeyless mechanical keyboard with tactile brown switches, RGB backlight, and wireless Bluetooth connectivity. Ideal for developers and writers who spend hours typing."
+  },
+  {
+    "id": "products/3",
+    "name": "LG 34-inch Ultrawide Monitor",
+    "category": "Electronics",
+    "price": 599.99,
+    "description": "Curved ultra-wide QHD monitor with 144Hz refresh rate and HDR10 support. Dramatically increases screen real estate for multitasking, coding, and video editing without needing a dual-monitor setup."
+  },
+  {
+    "id": "products/4",
+    "name": "Samsung T7 Portable SSD",
+    "category": "Electronics",
+    "price": 79.99,
+    "description": "Compact external solid state drive with 1TB capacity and USB 3.2 Gen 2 interface delivering up to 1050 MB/s transfer speeds. Fits in a pocket and survives drops up to 2 meters."
+  },
+  {
+    "id": "products/5",
+    "name": "Philips Hue Smart Home Bridge",
+    "category": "Electronics",
+    "price": 49.99,
+    "description": "Central hub that connects up to 50 smart light bulbs and accessories to your Wi-Fi network. Control lighting scenes, schedules, and automations via app, voice assistant, or sensor triggers."
+  },
+  {
+    "id": "products/6",
+    "name": "Anker 15W Wireless Charging Pad",
+    "category": "Electronics",
+    "price": 19.99,
+    "description": "Qi-certified fast wireless charger compatible with all iPhones and Android devices. Non-slip surface, LED indicator, and smart temperature control to protect your battery during overnight charging."
+  },
+  {
+    "id": "products/7",
+    "name": "Logitech C922 Pro Webcam",
+    "category": "Electronics",
+    "price": 99.99,
+    "description": "Full HD 1080p streaming webcam with autofocus, dual stereo microphones, and background replacement. Built for content creators, remote workers, and live streamers who need reliable, crisp video quality."
+  },
+  {
+    "id": "products/8",
+    "name": "Rain Design mStand Laptop Stand",
+    "category": "Electronics",
+    "price": 47.99,
+    "description": "Aluminum laptop riser that elevates your screen to eye level, improving posture and reducing neck strain during long work sessions. Built-in cable management and space underneath for an external keyboard."
+  },
+  {
+    "id": "products/9",
+    "name": "CalDigit TS4 Thunderbolt 4 Dock",
+    "category": "Electronics",
+    "price": 249.99,
+    "description": "Professional docking station with 18 ports including dual Thunderbolt 4, dual DisplayPort, USB-A, USB-C, 2.5Gb Ethernet, and SD card reader. Turn any laptop into a full workstation with a single cable."
+  },
+  {
+    "id": "products/10",
+    "name": "BenQ ScreenBar Halo Monitor Light",
+    "category": "Electronics",
+    "price": 139.99,
+    "description": "Asymmetric optical design desk lamp that illuminates your workspace without screen glare. USB-powered with auto-dimming sensor, 2700K–6500K color temperature range, and wireless remote control."
+  },
+  {
+    "id": "products/11",
+    "name": "Canada Goose Expedition Parka",
+    "category": "Clothing",
+    "price": 1095.00,
+    "description": "Arctic-rated insulated down parka certified for temperatures as low as -30°C. Coyote fur-trimmed hood, waterproof shell, and 625-fill-power white duck down keep you completely warm in brutal winter conditions."
+  },
+  {
+    "id": "products/12",
+    "name": "Icebreaker 200 Oasis Merino Base Layer",
+    "category": "Clothing",
+    "price": 89.99,
+    "description": "Lightweight merino wool long-sleeve thermal top that regulates body temperature, wicks moisture, and resists odour naturally. Soft against bare skin and suitable for hiking, skiing, or everyday layering."
+  },
+  {
+    "id": "products/13",
+    "name": "Salomon X Ultra 4 Hiking Boots",
+    "category": "Clothing",
+    "price": 164.99,
+    "description": "Mid-cut GORE-TEX waterproof hiking boots with Contragrip outsole for exceptional grip on wet rock, mud, and uneven terrain. Low weight and energetic rebound keep feet comfortable over long distances."
+  },
+  {
+    "id": "products/14",
+    "name": "Darn Tough Merino Cushion Socks",
+    "category": "Clothing",
+    "price": 24.99,
+    "description": "Vermont-made merino wool hiking socks with full cushion underfoot and unconditional lifetime guarantee. Blister-resistant, fast-drying, and naturally antimicrobial for multi-day trips without washing."
+  },
+  {
+    "id": "products/15",
+    "name": "Rapha Pro Team Aero Jersey",
+    "category": "Clothing",
+    "price": 195.00,
+    "description": "Race-cut cycling jersey with lightweight, wind-resistant Softshell panels on the chest, power-stretch fabric across the shoulders, and three rear pockets. Designed for high-effort road cycling in variable conditions."
+  },
+  {
+    "id": "products/16",
+    "name": "Lodge 12-inch Cast Iron Skillet",
+    "category": "Kitchen",
+    "price": 34.99,
+    "description": "Pre-seasoned cast iron frying pan that goes from stovetop to oven to campfire. Superb heat retention for searing steaks, frying eggs, baking cornbread, and deglazing sauces. Improves with every use."
+  },
+  {
+    "id": "products/17",
+    "name": "Bodum Chambord French Press",
+    "category": "Kitchen",
+    "price": 39.99,
+    "description": "Classic 8-cup French press coffee maker with stainless steel plunger and chrome frame. Produces a rich, full-bodied brew in four minutes — no paper filters, no electricity, no pods. Just coffee and hot water."
+  },
+  {
+    "id": "products/18",
+    "name": "KitchenAid Artisan Stand Mixer",
+    "category": "Kitchen",
+    "price": 449.99,
+    "description": "575-watt stand mixer with 5-quart stainless steel bowl, 10 speed settings, and planetary mixing action that reaches every corner of the bowl. Includes flat beater, dough hook, and wire whip attachments."
+  },
+  {
+    "id": "products/19",
+    "name": "Roomba j9+ Robot Vacuum",
+    "category": "Home",
+    "price": 899.99,
+    "description": "Self-emptying robot vacuum and mop with obstacle avoidance, smart mapping, and automatic dirt detection that cleans harder in dirtier areas. Empties itself for up to 60 days, so you never touch a dustbin."
+  },
+  {
+    "id": "products/20",
+    "name": "Dyson Purifier Cool Air Purifier",
+    "category": "Home",
+    "price": 549.99,
+    "description": "HEPA H13 and activated carbon filter removes 99.95% of particles, allergens, and pollutants including formaldehyde. Doubles as a bladeless fan and displays real-time air quality data on the LCD screen."
+  },
+  {
+    "id": "products/21",
+    "name": "Gravity 25lb Weighted Blanket",
+    "category": "Home",
+    "price": 149.99,
+    "description": "Deep pressure stimulation blanket filled with micro glass beads, evenly distributed in a grid-stitch design. Clinically shown to reduce anxiety and improve sleep quality by mimicking the sensation of being held."
+  },
+  {
+    "id": "products/22",
+    "name": "Boos Block Maple Cutting Board",
+    "category": "Kitchen",
+    "price": 119.99,
+    "description": "Edge-grain hard maple butcher block cutting board with juice groove and non-slip rubber feet. Naturally antimicrobial, gentle on knife edges, and thick enough to double as a carving board for large roasts."
+  },
+  {
+    "id": "products/23",
+    "name": "Breville Barista Express Espresso Machine",
+    "category": "Kitchen",
+    "price": 699.99,
+    "description": "All-in-one espresso machine with integrated conical burr grinder, PID temperature control, and steam wand for microfoam milk texturing. Grind fresh beans directly into the portafilter for barista-quality shots at home."
+  },
+  {
+    "id": "products/24",
+    "name": "Anova Precision Cooker Pro",
+    "category": "Kitchen",
+    "price": 199.99,
+    "description": "1200-watt sous vide immersion circulator with Wi-Fi connectivity and precise temperature control to within 0.1°C. Cook steaks, salmon, chicken, and vegetables to exact doneness every single time."
+  },
+  {
+    "id": "products/25",
+    "name": "IKEA Fejka Artificial Potted Plant Set",
+    "category": "Home",
+    "price": 14.99,
+    "description": "Set of three realistic artificial succulents in terracotta pots. Zero maintenance, no watering required, and UV-stable so they retain vibrant colour on windowsills or outdoors. Great for people who love greenery but travel often."
+  },
+  {
+    "id": "products/26",
+    "name": "Bowflex SelectTech 552 Adjustable Dumbbells",
+    "category": "Fitness",
+    "price": 429.99,
+    "description": "Pair of adjustable dumbbells that replace 15 sets of weights, ranging from 5 to 52.5 lbs in increments as small as 2.5 lbs. Turn a dial to change resistance in seconds and store compactly between workouts."
+  },
+  {
+    "id": "products/27",
+    "name": "Manduka PRO Yoga Mat",
+    "category": "Fitness",
+    "price": 120.00,
+    "description": "6mm thick professional yoga mat with dense cushioning for joint support and a closed-cell surface that repels moisture and bacteria. Includes alignment lines and a lifetime guarantee. Used by yoga studios worldwide."
+  },
+  {
+    "id": "products/28",
+    "name": "TriggerPoint GRID Foam Roller",
+    "category": "Fitness",
+    "price": 39.99,
+    "description": "Multi-density foam roller with a patented GRID pattern that replicates the feeling of a massage therapist's hands. Releases muscle tightness, speeds recovery after runs and gym sessions, and improves flexibility."
+  },
+  {
+    "id": "products/29",
+    "name": "Rogue Fitness Monster Band Pull-Up Bar",
+    "category": "Fitness",
+    "price": 119.99,
+    "description": "Heavy-duty doorframe pull-up bar rated for 500 lbs, with multiple grip positions for wide, narrow, and neutral grips. No screws required — tension mounts securely in any standard door frame in seconds."
+  },
+  {
+    "id": "products/30",
+    "name": "Crossrope Jump Rope Set",
+    "category": "Fitness",
+    "price": 79.99,
+    "description": "Interchangeable weighted jump rope system with fast and fit ropes for cardio, coordination, and high-intensity interval training. Seamless quick-clip handles let you switch weights in 2 seconds mid-workout."
+  },
+  {
+    "id": "products/31",
+    "name": "Fit Simplify Resistance Band Set",
+    "category": "Fitness",
+    "price": 14.99,
+    "description": "Set of five loop resistance bands in progressive difficulty levels from extra-light to extra-heavy. Used for physical therapy, strength training, glute activation, and stretching. Snap-proof latex with carry bag included."
+  },
+  {
+    "id": "products/32",
+    "name": "Kettlebell Kings 35lb Kettlebell",
+    "category": "Fitness",
+    "price": 59.99,
+    "description": "Powder-coated cast iron competition-style kettlebell with flat base, smooth handle for chalk grip, and precise weight tolerance. Built for swings, Turkish get-ups, cleans, and presses at home or in the gym."
+  },
+  {
+    "id": "products/33",
+    "name": "Perfect Fitness Ab Carver Pro",
+    "category": "Fitness",
+    "price": 29.99,
+    "description": "Ab roller wheel with ultra-wide carbonite wheel for lateral stability and a carbon steel spring that provides resistance on the way out and assistance on the way back. Trains core, arms, and shoulders simultaneously."
+  },
+  {
+    "id": "products/34",
+    "name": "Garmin Forerunner 255 GPS Watch",
+    "category": "Fitness",
+    "price": 349.99,
+    "description": "GPS running and multisport watch with wrist-based heart rate monitoring, blood oxygen tracking, HRV sleep analysis, training readiness score, and 14-day battery life. Connects to Garmin Coach for adaptive training plans."
+  },
+  {
+    "id": "products/35",
+    "name": "CamelBak M.U.L.E. 12L Hydration Pack",
+    "category": "Outdoors",
+    "price": 119.99,
+    "description": "Hands-free hydration backpack with 3-litre water reservoir, 6L gear storage, fleece-lined goggle pocket, and dual-density foam back panel. Built for mountain biking, trail running, and hiking in warm weather."
+  },
+  {
+    "id": "products/36",
+    "name": "Clean Code by Robert C. Martin",
+    "category": "Books",
+    "price": 37.99,
+    "description": "Essential software craftsmanship guide covering principles and practices for writing readable, maintainable, and testable code. Required reading for professional developers who want to stop writing code that embarrasses them six months later."
+  },
+  {
+    "id": "products/37",
+    "name": "Designing Data-Intensive Applications",
+    "category": "Books",
+    "price": 44.99,
+    "description": "Comprehensive guide to building scalable, reliable, and maintainable distributed systems. Covers databases, replication, partitioning, transactions, stream processing, and the real tradeoffs behind architectural decisions. A must-read for backend engineers."
+  },
+  {
+    "id": "products/38",
+    "name": "GAN 356 M Speed Cube",
+    "category": "Games",
+    "price": 34.99,
+    "description": "Competition-grade magnetic 3x3 Rubik's Cube with GAN's honeycomb contact surface for reduced friction, numerical IPG adjustment system, and 48 magnets in the corners and edges for satisfying, consistent turns."
+  },
+  {
+    "id": "products/39",
+    "name": "Wacom Intuos Pro Drawing Tablet",
+    "category": "Electronics",
+    "price": 379.99,
+    "description": "Professional pen tablet with 8192 pressure levels, tilt recognition, touch input, and eight customisable ExpressKeys. Compatible with Photoshop, Illustrator, Clip Studio, and any software that supports stylus input."
+  },
+  {
+    "id": "products/40",
+    "name": "Loop Engage Earplugs",
+    "category": "Wellness",
+    "price": 29.99,
+    "description": "Reusable silicone earplugs that reduce noise by 16dB while preserving sound clarity — conversations and music still sound natural, just quieter. Designed for concentration at work, studying in libraries, or sensory sensitivity."
+  },
+  {
+    "id": "products/41",
+    "name": "Everlasting Comfort Lumbar Support Pillow",
+    "category": "Office",
+    "price": 34.99,
+    "description": "Pure memory foam lumbar cushion with adjustable elastic strap that fits any chair. Fills the gap between your lower back and seat back, reducing muscle fatigue and sciatic pain during long hours at a desk."
+  },
+  {
+    "id": "products/42",
+    "name": "Ergotron LX Monitor Arm",
+    "category": "Office",
+    "price": 159.99,
+    "description": "Articulating monitor arm with full range of motion — tilt, pan, extend, and retract to position any screen up to 34 inches exactly where you need it. Frees up desk space and enables standing-desk workflows."
+  },
+  {
+    "id": "products/43",
+    "name": "Cable Matters Cable Management Box",
+    "category": "Office",
+    "price": 18.99,
+    "description": "Large cord organiser box that conceals power strips, adapters, and messy cables behind your desk. Ventilated plastic housing prevents heat buildup, with a removable lid and side entry slots for clean routing."
+  },
+  {
+    "id": "products/44",
+    "name": "Quartet Dry-Erase Calendar Board",
+    "category": "Office",
+    "price": 49.99,
+    "description": "36x24 inch magnetic whiteboard calendar with a reusable dry-erase surface and printed monthly and weekly planning sections. Hangs on any wall for visible project planning, sprint boards, and team schedules."
+  },
+  {
+    "id": "products/45",
+    "name": "Rotring 600 Mechanical Pencil",
+    "category": "Office",
+    "price": 27.99,
+    "description": "German-engineered all-metal drafting pencil with a fixed lead sleeve for precise line work, a knurled grip for control, and a weighted balance that reduces hand fatigue during long writing or sketching sessions."
+  },
+  {
+    "id": "products/46",
+    "name": "Jackery Explorer 1000 Power Station",
+    "category": "Outdoors",
+    "price": 999.99,
+    "description": "1002Wh portable power station with three AC outlets, USB-A, USB-C, and 12V car socket. Recharges via solar panels, car adapters, or wall outlet. Powers laptops, CPAP machines, mini fridges, and camera gear off-grid."
+  },
+  {
+    "id": "products/47",
+    "name": "BigBlue 28W Solar Charger",
+    "category": "Outdoors",
+    "price": 59.99,
+    "description": "Foldable solar panel with three USB-A ports and an ammeter display showing real-time charge current. Charges phones and small devices directly from sunlight during camping, hiking, or power outages."
+  },
+  {
+    "id": "products/48",
+    "name": "Big Agnes Copper Spur HV UL2 Tent",
+    "category": "Outdoors",
+    "price": 499.99,
+    "description": "Ultralight two-person backpacking tent weighing only 1.13kg with two doors, two vestibules, and a breathable double-wall design. Sets up in under five minutes and withstands three-season conditions including wind and rain."
+  },
+  {
+    "id": "products/49",
+    "name": "Hydro Flask 32oz Wide Mouth Bottle",
+    "category": "Outdoors",
+    "price": 44.95,
+    "description": "Double-wall vacuum-insulated stainless steel water bottle that keeps drinks cold for 24 hours and hot for 12. Powder-coated exterior resists dents and scratches, and a wide mouth accepts ice cubes and cleaning brushes."
+  },
+  {
+    "id": "products/50",
+    "name": "Black Diamond Spot Headlamp",
+    "category": "Outdoors",
+    "price": 39.95,
+    "description": "350-lumen waterproof headlamp with PowerTap technology for instant brightness adjustment, red night-vision mode to protect dark adaptation, and a single-hand dimming dial. Essential for trail running, camping, and emergency preparedness."
+  }
+]

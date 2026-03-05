@@ -76,6 +76,55 @@ That last one is the killer feature for real applications — semantic relevance
 
 ---
 
+## Using It From Python
+
+The RavenDB Python client exposes raw RQL queries through `session.advanced.raw_query()`. Combining that with `vector.search()` looks like this ([full source on GitHub](https://github.com/rusiqe/ravendb-devrel-portfolio/blob/main/04-demo/search.py)):
+
+```python
+with store.open_session() as session:
+    results = list(
+        session.advanced.raw_query(
+            """
+            from Products
+            where vector.search(Description, $query)
+            order by score() desc
+            limit $limit
+            """,
+            Product,
+        )
+        .add_parameter("query", query_text)
+        .add_parameter("limit", 5)
+    )
+```
+
+No embedding library. No separate vector client. Just an RQL query with a parameterised `vector.search()` call — the same session interface you'd use for any other RavenDB query.
+
+Adding a category filter is one line ([search.py#L49–55](https://github.com/rusiqe/ravendb-devrel-portfolio/blob/main/04-demo/search.py#L49)):
+
+```python
+        """
+        from Products
+        where vector.search(Description, $query)
+        and Category = $category
+        order by score() desc
+        limit $limit
+        """
+```
+
+The structured filter and the vector search execute together inside RavenDB — there's no post-filtering step on the client.
+
+Getting your data in is equally straightforward. RavenDB's bulk insert API handles everything; embeddings are generated automatically when queries arrive ([seed.py on GitHub](https://github.com/rusiqe/ravendb-devrel-portfolio/blob/main/04-demo/seed.py)):
+
+```python
+with store.bulk_insert() as bulk:
+    for product in products:
+        bulk.store_as(product, product.id)
+```
+
+No schema changes. No embedding pre-computation step. Store your documents as you normally would and let RavenDB handle the vector layer.
+
+---
+
 ## Embedding Providers and the Built-In Model
 
 When defining a static index, you have full control over how embeddings get generated. RavenDB integrates directly with:
@@ -115,9 +164,34 @@ In all of these, you want your AI-powered retrieval layer right next to your dat
 
 ---
 
+## Seeing It in Practice
+
+To make this concrete, I built a [small demo](https://github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo): a 50-product catalog seeded into RavenDB, searchable via a Python CLI using `vector.search()` with the built-in bge-micro-v2 model.
+
+The most interesting part of building it was watching what keyword search would have missed. These queries contain *no shared words* with the products they return:
+
+| Query | Keyword result | Semantic result (RavenDB) |
+|---|---|---|
+| "something warm for winter travel" | 0 results | Canada Goose Expedition Parka |
+| "relieve back pain at my desk" | 0 results | Lumbar Support Pillow, Monitor Arm |
+| "drink coffee without electricity" | 0 results | Bodum Chambord French Press |
+| "peripheral for heavy typists" | 0 results | Keychron K2 Mechanical Keyboard |
+| "muscle recovery after a run" | 0 results | TriggerPoint Foam Roller |
+| "books for becoming a better programmer" | 0 results | Clean Code, Designing Data-Intensive Apps |
+
+Every one of these is a query that a real user would type. None of them would return a single result from a keyword-based system. All of them work with `vector.search()` on a plain text description field, with zero configuration beyond installing RavenDB.
+
+The demo also shows the combined filter in action — `vector.search(Description, "muscle recovery after a run") and Category = "Fitness"` — which is where you'd use this in a real application: semantic relevance scoped to a category, price range, brand, or any other structured attribute. One query. One system.
+
+You can clone the demo and have it running in under five minutes: [github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo](https://github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo).
+
+---
+
 ## Try It
 
 If you're already running RavenDB 7.0, you can start with a dynamic query right now — no configuration required. If you want to go further, the [RavenDB documentation on vector search](https://ravendb.net/docs) walks through defining static indexes and configuring embedding providers.
+
+For a working example with Python client code you can run locally, the [demo project](https://github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo) has everything: seed script, search CLI, and 50 products chosen specifically to show where semantic search beats keyword search.
 
 The infrastructure problem is already solved. What are you going to build with it?
 
