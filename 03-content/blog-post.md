@@ -1,36 +1,33 @@
 # Your Database Already Has a Vector Search Engine. You Just Haven't Used It Yet.
 
-Most developers bolt on a vector store after the fact. Pinecone here, Weaviate there, a sync job duct-taped in between. It works until it doesn't. Here's a better way.
+Most developers bolt on a vector store after the fact. An afterthought after discovering how the default search experience leaves out the fun of discovery and suggestion. Pinecone here, Weaviate there, a sync job duct-taped in between. It works (sometimes) until it just doesn't. Here's a better way.
 
----
 
 ## The Problem With Keyword Search
 
-Let's be honest about what traditional search actually does: it matches characters. You search for "fast," you get back documents that contain the string "fast." That's the whole trick.
+Let's be honest about what traditional search actually does: it matches characters. If you search for "fast," you get back documents that contain the string "fast." That's the whole trick.
 
-Which is fine until you realize that "high-performance," "low-latency," and "quick processing pipelines" all mean roughly the same thing, and keyword search has no idea. It won't connect those dots. It's not stupid — it's just operating on the wrong abstraction.
+Which is fine until you realize that "high-performance," "low-latency," and "quick processing pipelines" all mean roughly the same thing, and keyword search has no idea. It won't connect those dots. It's not stupid, it's just operating on the wrong abstraction.
 
 That's the gap semantic search fills.
 
 Semantic search works on *meaning*, not words. The mechanism that makes this possible is something called an **embedding**.
 
----
 
 ## What Embeddings Are
 
-An embedding represents text as a list of numbers — a vector — that encodes what that text *means* rather than how it's spelled. Feed "fast car" and "high-speed vehicle" into a good embedding model and you'll get back two vectors that sit close to each other in multi-dimensional space. Feed in "fast car" and "tax policy" and those vectors will be far apart.
+An embedding represents text as a list of numbers, a vector, that encodes what that text *means* rather than how it's spelled. Feed "fast car" and "high-speed vehicle" into a good embedding model, and you'll get back two vectors that sit close to each other in multi-dimensional space. Feed in "fast car" and "tax policy," and those vectors will be far apart.
 
 That distance becomes your search signal. Instead of asking "does this document contain this word?", you're asking "is this document *close in meaning* to my query?"
 
 That's the shift from keyword search to semantic search. Simple concept; the implementation is what gets interesting.
 
----
 
-## How RavenDB Implements It
-
+## How RavenDB Implements Vector Search
+[RavenDB Vector Search](https://imgur.com/xEUTBTR)
 Starting with **RavenDB 7.0**, vector search is built directly into the database. Not a plugin. Not a sidecar. It's part of the core indexing engine.
 
-Under the hood, RavenDB uses **Corax** — its indexing engine — to build an **HNSW graph** (Hierarchical Navigable Small World). HNSW is one of the strongest algorithms for approximate nearest neighbor search. It scales to millions of vectors and doesn't require loading everything into memory.
+Under the hood, RavenDB uses **Corax**, its indexing engine, to build an **HNSW graph** (Hierarchical Navigable Small World). HNSW is among the strongest algorithms for approximate nearest neighbor search. It scales to millions of vectors and doesn't require loading everything into memory.
 
 You get vector search where your data already lives. No sync jobs, no consistency headaches, no extra infrastructure.
 
@@ -38,7 +35,7 @@ You get vector search where your data already lives. No sync jobs, no consistenc
 
 ## Where Embeddings Come From
 
-Before looking at queries, it helps to understand how RavenDB generates embeddings in the first place. When defining a static index, you configure the embedding provider once and RavenDB handles generation and updates from there. It integrates with:
+Before looking at queries, it helps to first understand how RavenDB generates embeddings. When defining a static index, you configure the embedding provider once, and RavenDB handles generation and updates from that point on. It integrates with:
 
 - **OpenAI** (text-embedding-3-small, text-embedding-3-large, etc.)
 - **Azure OpenAI**
@@ -47,7 +44,7 @@ Before looking at queries, it helps to understand how RavenDB generates embeddin
 - **Ollama** (for local models)
 - **Mistral**
 
-The most interesting option, though, requires none of these. RavenDB ships with **bge-micro-v2** built in — a compact embedding model that runs entirely inside the database process. No API key. No network call. No rate limits. If you want semantic search today, you can have it without signing up for anything.
+The most interesting option, though, requires none of these. RavenDB ships with **bge-micro-v2** built in. It's a compact embedding model that runs entirely inside the database process. No API key. No network call. No rate limits. If you want semantic search today, you can have it without signing up for anything else or creating a data storage stack.
 
 For internal search, smaller datasets, or privacy-sensitive applications, it's all you need.
 
@@ -59,7 +56,7 @@ There are two ways to run vector search in RavenDB, and they serve different pur
 
 ### Dynamic Queries
 
-The fast path. Write a query and RavenDB creates the index automatically — useful for prototyping and exploration:
+The fast path. Write a query, and RavenDB creates the index automatically. Works great for prototyping and exploration:
 
 ```rql
 from Products
