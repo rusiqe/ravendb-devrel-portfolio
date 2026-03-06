@@ -4,21 +4,63 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Map/Reduce in RavenDB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
+  /* ── Dark theme (default) ── */
   :root {
     --bg: #0d1117;
     --surface: #161b22;
-    --surface2: #1f2937;
-    --border: #30363d;
-    --accent: #e8a317;
-    --accent2: #3b82f6;
+    --surface2: #1e2533;
+    --border: #2a3142;
+    --accent: #0693e3;
+    --accent-hover: #0577c0;
+    --accent2: #38bdf8;
     --accent3: #10b981;
     --text: #e6edf3;
     --muted: #8b949e;
-    --code-bg: #0d1117;
+    --code-bg: #0b0f17;
     --radius: 12px;
     --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-    --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-sans: 'Montserrat', 'Inter', 'Segoe UI', system-ui, sans-serif;
+    /* gradients */
+    --grad-start: #1a2332;
+    --grad-start2: #1a2a1a;
+    /* syntax */
+    --syn-kw: #ff7b72;
+    --syn-ty: #79c0ff;
+    --syn-fn: #d2a8ff;
+    --syn-st: #a5d6ff;
+    --syn-cm: #6e7a8a;
+    --syn-nu: #f78166;
+    --syn-ann: #3ec97e;
+  }
+
+  /* ── Light theme ── */
+  [data-theme="light"] {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --surface2: #f1f5f9;
+    --border: #dde3ea;
+    --accent: #0693e3;
+    --accent-hover: #0577c0;
+    --accent2: #0284c7;
+    --accent3: #059669;
+    --text: #1e293b;
+    --muted: #64748b;
+    --code-bg: #f1f5f9;
+    /* gradients */
+    --grad-start: #dbeafe;
+    --grad-start2: #d1fae5;
+    /* syntax */
+    --syn-kw: #d73a49;
+    --syn-ty: #0550ae;
+    --syn-fn: #6f42c1;
+    --syn-st: #0550ae;
+    --syn-cm: #6e7a8a;
+    --syn-nu: #cf222e;
+    --syn-ann: #059669;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -66,7 +108,7 @@
     font-size: 0.85rem;
     transition: all 0.15s;
   }
-  .nav-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+  .nav-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
   .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
   .nav-btn:disabled:hover { background: var(--surface2); color: var(--text); border-color: var(--border); }
 
@@ -220,16 +262,16 @@
   }
   code { font-family: var(--font-mono); }
 
-  /* Syntax colours (manual) */
-  .kw  { color: #ff7b72; }   /* keyword */
-  .ty  { color: #79c0ff; }   /* type / class */
-  .fn  { color: #d2a8ff; }   /* method / function */
-  .st  { color: #a5d6ff; }   /* string */
-  .cm  { color: #8b949e; font-style: italic; } /* comment */
-  .nu  { color: #f78166; }   /* number */
-  .op  { color: #e6edf3; }   /* operator / punctuation */
-  .id  { color: #e6edf3; }   /* identifier */
-  .ann { color: var(--accent3); } /* RavenDB keyword/annotation */
+  /* Syntax colours — theme-aware */
+  .kw  { color: var(--syn-kw); }
+  .ty  { color: var(--syn-ty); }
+  .fn  { color: var(--syn-fn); }
+  .st  { color: var(--syn-st); }
+  .cm  { color: var(--syn-cm); font-style: italic; }
+  .nu  { color: var(--syn-nu); }
+  .op  { color: var(--text); }
+  .id  { color: var(--text); }
+  .ann { color: var(--syn-ann); }
 
   /* ── Pipeline diagram ── */
   .pipeline {
@@ -263,7 +305,7 @@
 
   /* ── Analogy box ── */
   .analogy-box {
-    background: linear-gradient(135deg, #1a2332 0%, #1a2a1a 100%);
+    background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-start2) 100%);
     border: 1px solid var(--accent3);
     border-radius: var(--radius);
     padding: 28px 32px;
@@ -298,15 +340,12 @@
 
   /* ── Title slide gradient ── */
   .slide.title-slide {
-    background: radial-gradient(ellipse at 60% 40%, #1a2332 0%, var(--bg) 70%);
+    background: radial-gradient(ellipse at 60% 40%, var(--grad-start) 0%, var(--bg) 70%);
   }
   .title-badge {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: rgba(232, 163, 23, 0.12);
-    border: 1px solid rgba(232, 163, 23, 0.3);
-    color: var(--accent);
     padding: 6px 16px;
     border-radius: 999px;
     font-size: 0.78rem;
@@ -364,6 +403,31 @@
   .lang-panel.hidden { display: none; }
   .lang-panel pre { border-radius: 0 var(--radius) var(--radius) var(--radius); }
 
+  /* ── Theme toggle ── */
+  #theme-toggle {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  #theme-toggle:hover { background: var(--accent); border-color: var(--accent); }
+
+  /* ── Title badge ── */
+  .title-badge {
+    background: rgba(6, 147, 227, 0.12);
+    border: 1px solid rgba(6, 147, 227, 0.3);
+    color: var(--accent);
+  }
+
   /* ── Keyboard hints ── */
   #kb-hint {
     position: fixed;
@@ -380,17 +444,19 @@
 
 <div id="nav">
   <div class="logo">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" stroke="#e8a317" stroke-width="1.8" fill="none"/>
-      <path d="M2 7l10 5 10-5" stroke="#e8a317" stroke-width="1.8" fill="none"/>
-      <path d="M12 12v10" stroke="#e8a317" stroke-width="1.8"/>
-    </svg>
+    <img
+      src="https://avatars.githubusercontent.com/u/5700680?s=32&v=4"
+      width="26" height="26"
+      style="border-radius:5px; display:block;"
+      alt="RavenDB"
+    />
     RavenDB <span>/ Map·Reduce Deep Dive</span>
   </div>
   <div id="nav-controls">
     <span id="slide-counter">1 / 9</span>
     <button class="nav-btn" id="btn-prev" disabled>← Prev</button>
     <button class="nav-btn" id="btn-next">Next →</button>
+    <button id="theme-toggle" title="Toggle light / dark mode">☀️</button>
   </div>
 </div>
 
@@ -833,6 +899,22 @@
   document.addEventListener('touchend',   e => {
     const dx = e.changedTouches[0].clientX - tx;
     if (Math.abs(dx) > 50) go(dx < 0 ? cur + 1 : cur - 1);
+  });
+
+  // ── Theme toggle ──────────────────────────────────────────────────────────
+  const themeToggle = document.getElementById('theme-toggle');
+  const root        = document.documentElement;
+
+  // Initialise from saved preference; default to dark
+  const savedTheme = localStorage.getItem('ravendb-theme') || 'dark';
+  root.setAttribute('data-theme', savedTheme);
+  themeToggle.textContent = savedTheme === 'light' ? '🌙' : '☀️';
+
+  themeToggle.addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ravendb-theme', next);
+    themeToggle.textContent = next === 'light' ? '🌙' : '☀️';
   });
 
   // Language toggle tabs
