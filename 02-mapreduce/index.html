@@ -331,6 +331,39 @@
   /* ── Slide-specific ── */
   #slide-8 .card p { font-size: 0.9rem; line-height: 1.6; color: var(--muted); margin-top: 6px; }
 
+  /* ── Language toggle tabs ── */
+  .lang-tabs { width: 100%; max-width: 900px; }
+  .lang-tab-btns {
+    display: flex;
+    gap: 2px;
+    margin-bottom: -1px;
+    position: relative;
+    z-index: 1;
+  }
+  .lang-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    color: var(--muted);
+    padding: 5px 16px;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    transition: all 0.15s;
+    letter-spacing: 0.03em;
+  }
+  .lang-btn:hover { color: var(--text); }
+  .lang-btn.active {
+    background: var(--code-bg);
+    color: var(--accent);
+    border-color: var(--border);
+  }
+  .lang-panel { display: block; }
+  .lang-panel.hidden { display: none; }
+  .lang-panel pre { border-radius: 0 var(--radius) var(--radius) var(--radius); }
+
   /* ── Keyboard hints ── */
   #kb-hint {
     position: fixed;
@@ -476,7 +509,13 @@
   <div class="slide" id="slide-5">
     <div class="slide-label">Code Example</div>
     <h2>Basic Map/Reduce Index</h2>
-    <pre><code><span class="cm">// C# — Count products per category</span>
+    <div class="lang-tabs">
+      <div class="lang-tab-btns">
+        <button class="lang-btn active" data-lang="csharp">C#</button>
+        <button class="lang-btn" data-lang="rql">RQL</button>
+      </div>
+      <div class="lang-panel" data-lang="csharp">
+        <pre><code><span class="cm">// Count products per category</span>
 <span class="kw">public class</span> <span class="ty">Products_ByCategory</span>
     : <span class="ty">AbstractIndexCreationTask</span>&lt;<span class="ty">Product</span>, <span class="ty">Products_ByCategory.Result</span>&gt;
 {
@@ -484,14 +523,14 @@
 
     <span class="kw">public</span> <span class="fn">Products_ByCategory</span>()
     {
-        <span class="cm">// MAP — run once per document</span>
+        <span class="cm">// MAP — emit one entry per document</span>
         <span class="id">Map</span> = products =&gt; <span class="kw">from</span> p <span class="kw">in</span> products
                           <span class="kw">select new</span> <span class="ty">Result</span> {
                               Category = <span class="ann">LoadDocument</span>&lt;<span class="ty">Category</span>&gt;(p.Category).Name,
                               Count    = <span class="nu">1</span>
                           };
 
-        <span class="cm">// REDUCE — aggregate the mapped values</span>
+        <span class="cm">// REDUCE — group and sum incrementally</span>
         <span class="id">Reduce</span> = results =&gt; <span class="kw">from</span> r <span class="kw">in</span> results
                             <span class="kw">group</span> r <span class="kw">by</span> r.Category <span class="kw">into</span> g
                             <span class="kw">select new</span> <span class="ty">Result</span> {
@@ -499,11 +538,24 @@
                                 Count    = g.<span class="fn">Sum</span>(x =&gt; x.Count)
                             };
     }
-}
-
-<span class="cm">// RQL query — reads pre-computed results, no scan</span>
+}</code></pre>
+      </div>
+      <div class="lang-panel hidden" data-lang="rql">
+        <pre><code><span class="cm">// Query the index — reads pre-computed results, no aggregation at query time</span>
 <span class="ann">from index</span> <span class="st">'Products/ByCategory'</span>
-<span class="ann">order by</span> Count <span class="ann">desc</span></code></pre>
+<span class="ann">order by</span> Count <span class="ann">desc</span>
+
+<span class="cm">// Filter to a specific category</span>
+<span class="ann">from index</span> <span class="st">'Products/ByCategory'</span>
+<span class="ann">where</span> Category <span class="op">=</span> <span class="st">"Electronics"</span>
+
+<span class="cm">// Sample result document</span>
+<span class="op">{</span>
+    <span class="st">"Category"</span><span class="op">:</span> <span class="st">"Electronics"</span><span class="op">,</span>
+    <span class="st">"Count"</span><span class="op">:</span> <span class="nu">142</span>
+<span class="op">}</span></code></pre>
+      </div>
+    </div>
   </div>
 
   <!-- ══════════════════════════════════════════════
@@ -512,8 +564,14 @@
   <div class="slide" id="slide-6">
     <div class="slide-label">Advanced Feature</div>
     <h2>Multi-Map / Reduce</h2>
-    <p style="text-align:center; margin-bottom:20px; color:var(--muted);">Aggregate across <strong>multiple collections</strong> in a single index — unified, consistent results.</p>
-    <pre><code><span class="cm">// Count Companies, Suppliers, and Employees per City</span>
+    <p style="text-align:center; margin-bottom:16px; color:var(--muted);">Aggregate across <strong>multiple collections</strong> in a single index — unified, consistent results.</p>
+    <div class="lang-tabs">
+      <div class="lang-tab-btns">
+        <button class="lang-btn active" data-lang="csharp">C#</button>
+        <button class="lang-btn" data-lang="rql">RQL</button>
+      </div>
+      <div class="lang-panel" data-lang="csharp">
+        <pre><code><span class="cm">// Count Companies, Suppliers, and Employees per City</span>
 <span class="kw">public class</span> <span class="ty">Cities_Details</span>
     : <span class="ty">AbstractMultiMapIndexCreationTask</span>&lt;<span class="ty">Cities_Details.IndexEntry</span>&gt;
 {
@@ -535,6 +593,27 @@
                             };
     }
 }</code></pre>
+      </div>
+      <div class="lang-panel hidden" data-lang="rql">
+        <pre><code><span class="cm">// Query the unified view — all three collections reduced into one result per city</span>
+<span class="ann">from index</span> <span class="st">'Cities/Details'</span>
+<span class="ann">order by</span> Companies <span class="ann">desc</span>
+
+<span class="cm">// Filter to a specific city</span>
+<span class="ann">from index</span> <span class="st">'Cities/Details'</span>
+<span class="ann">where</span> City <span class="op">=</span> <span class="st">"London"</span>
+
+<span class="cm">// Sample result — one document per city, data drawn from three collections</span>
+<span class="op">{</span>
+    <span class="st">"City"</span><span class="op">:</span>      <span class="st">"London"</span><span class="op">,</span>
+    <span class="st">"Companies"</span><span class="op">:</span> <span class="nu">28</span><span class="op">,</span>
+    <span class="st">"Employees"</span><span class="op">:</span> <span class="nu">94</span><span class="op">,</span>
+    <span class="st">"Suppliers"</span><span class="op">:</span> <span class="nu">15</span>
+<span class="op">}</span>
+
+<span class="cm">// No JOINs. No cross-collection scans. One index, always fresh.</span></code></pre>
+      </div>
+    </div>
   </div>
 
   <!-- ══════════════════════════════════════════════
@@ -545,8 +624,14 @@
     <h2><span class="accent">OutputReduceToCollection</span></h2>
     <div class="cols-2" style="max-width:1000px; align-items:start;">
       <div>
-        <p style="margin-bottom:16px;">Reduce results can be materialized as <strong>real documents</strong> in a named collection — enabling recursive aggregations, subscriptions, and ETL on top of the aggregated data.</p>
-        <pre style="max-width:100%;"><code><span class="cm">// Write daily sales summaries as documents</span>
+        <div class="lang-tabs" style="max-width:100%;">
+          <div class="lang-tab-btns">
+            <button class="lang-btn active" data-lang="csharp">C#</button>
+            <button class="lang-btn" data-lang="rql">RQL</button>
+          </div>
+          <div class="lang-panel" data-lang="csharp">
+            <p style="margin-bottom:12px; font-size:0.88rem;">Reduce results materialise as <strong>real documents</strong> in a named collection — enabling recursive roll-ups, subscriptions, and ETL on top of aggregated data.</p>
+            <pre style="max-width:100%; font-size:0.75rem;"><code><span class="cm">// Write daily sales summaries as documents</span>
 <span class="kw">public class</span> <span class="ty">DailySales</span>
     : <span class="ty">AbstractIndexCreationTask</span>&lt;<span class="ty">Order</span>, <span class="ty">DailySales.Result</span>&gt;
 {
@@ -571,6 +656,31 @@
             = r =&gt; <span class="st">$"sales/daily/{r.Date:yyyy-MM-dd}"</span>;
     }
 }</code></pre>
+          </div>
+          <div class="lang-panel hidden" data-lang="rql">
+            <p style="margin-bottom:12px; font-size:0.88rem;">Output documents are <strong>queryable like any collection</strong> — or load by predictable ID. Chain another index on top for monthly or yearly roll-ups.</p>
+            <pre style="max-width:100%; font-size:0.75rem;"><code><span class="cm">// Query the output collection directly</span>
+<span class="ann">from</span> DailySalesResults
+<span class="ann">where</span> Date <span class="op">&gt;=</span> <span class="st">"2024-01-01"</span>
+<span class="ann">order by</span> Revenue <span class="ann">desc</span>
+<span class="ann">limit</span> <span class="nu">30</span>
+
+<span class="cm">// Load a single day by its predictable document ID</span>
+<span class="ann">load</span> <span class="st">"sales/daily/2024-01-15"</span>
+
+<span class="cm">// Chain a monthly roll-up index on top of DailySalesResults</span>
+<span class="ann">from index</span> <span class="st">'MonthlySalesRollup'</span>
+<span class="ann">where</span> Month <span class="op">=</span> <span class="st">"2024-01"</span>
+<span class="ann">order by</span> Revenue <span class="ann">desc</span>
+
+<span class="cm">// Sample result document</span>
+<span class="op">{</span>
+    <span class="st">"Date"</span><span class="op">:</span>    <span class="st">"2024-01-15T00:00:00.0000000"</span><span class="op">,</span>
+    <span class="st">"Revenue"</span><span class="op">:</span> <span class="nu">48250.00</span><span class="op">,</span>
+    <span class="st">"Count"</span><span class="op">:</span>   <span class="nu">312</span>
+<span class="op">}</span></code></pre>
+          </div>
+        </div>
       </div>
       <div style="display:flex; flex-direction:column; gap:16px;">
         <div class="card green">
@@ -723,6 +833,19 @@
   document.addEventListener('touchend',   e => {
     const dx = e.changedTouches[0].clientX - tx;
     if (Math.abs(dx) > 50) go(dx < 0 ? cur + 1 : cur - 1);
+  });
+
+  // Language toggle tabs
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const tabs = this.closest('.lang-tabs');
+      const lang = this.dataset.lang;
+      tabs.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+      tabs.querySelectorAll('.lang-panel').forEach(p => p.classList.add('hidden'));
+      this.classList.add('active');
+      tabs.querySelector(`.lang-panel[data-lang="${lang}"]`).classList.remove('hidden');
+    });
   });
 </script>
 </body>
