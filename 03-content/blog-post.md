@@ -24,7 +24,8 @@ That's the shift from keyword search to semantic search. Simple concept; the imp
 
 
 ## How RavenDB Implements Vector Search
-[RavenDB Vector Search](https://imgur.com/xEUTBTR)
+![RavenDB Vector Search](https://imgur.com/xEUTBTR)
+
 Starting with **RavenDB 7.0**, vector search is built directly into the database. Not a plugin. Not a sidecar. It's part of the core indexing engine.
 
 Under the hood, RavenDB uses **Corax**, its indexing engine, to build an **HNSW graph** (Hierarchical Navigable Small World). HNSW is among the strongest algorithms for approximate nearest neighbor search. It scales to millions of vectors and doesn't require loading everything into memory.
