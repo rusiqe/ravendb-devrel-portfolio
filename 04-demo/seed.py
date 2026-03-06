@@ -18,6 +18,8 @@ from pathlib import Path
 
 from rich.console import Console
 from rich.progress import track
+from ravendb.serverwide.operations.common import CreateDatabaseOperation
+from ravendb.serverwide.database_record import DatabaseRecord
 
 from config import get_store
 from embedder import embed_to_base64
@@ -44,7 +46,17 @@ def seed_database() -> None:
     # Connect to RavenDB
     console.print(f"\nConnecting to RavenDB...")
     store = get_store()
-    console.print(f"[green]✓[/green] Connected to [bold]{store.urls[0]}[/bold] / [bold]{store.database}[/bold]")
+    console.print(f"[green]✓[/green] Connected to [bold]{store.urls[0]}[/bold]")
+
+    # Create the database if it doesn't exist yet
+    try:
+        store.maintenance.server.send(CreateDatabaseOperation(DatabaseRecord(store.database)))
+        console.print(f"[green]✓[/green] Created database [bold]{store.database}[/bold]")
+    except Exception as e:
+        if "already exists" in str(e).lower() or "concurrency" in str(e).lower():
+            console.print(f"[dim]  Database [bold]{store.database}[/bold] already exists[/dim]")
+        else:
+            raise
 
     # Pre-warm the embedding model once before the bulk loop
     console.print("\nLoading bge-micro-v2 embedding model (first run only)...")
