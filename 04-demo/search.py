@@ -2,18 +2,23 @@
 Interactive semantic search CLI for the RavenDB ProductsDemo.
 
 Usage:
-    python search.py                    # interactive mode
-    python search.py "warm winter coat" # single query mode
+    python search.py                                       # interactive mode
+    python search.py "warm winter coat"                    # single query mode
+    python search.py "muscle recovery after a run" --category Fitness
 
 How it works:
-    RavenDB 7.0 ships with a built-in embedding model (bge-micro-v2).
-    When you call vector.search() on a text field, RavenDB generates the
-    query embedding on the fly and compares it against all document embeddings
-    using an HNSW (Hierarchical Navigable Small World) approximate nearest
-    neighbour graph built by the Corax indexing engine.
+    1. search.py generates a 384-dim bge-micro-v2 embedding for your query
+       using the same ONNX model bundled inside RavenDB.
+    2. session.query().vector_search() passes the vector to RavenDB.
+    3. RavenDB searches the HNSW graph (built by Corax) over the pre-computed
+       descriptionVector fields stored with each product document.
+    4. Results come back ranked by cosine similarity — no shared words needed.
 
-    The result: natural language queries that find semantically similar
-    products even when they share no keywords with the query.
+The RQL equivalent of what this executes:
+    from Products
+    where vector.search(descriptionVector, $queryVector)
+    order by score() desc
+    limit 5
 """
 
 import sys
@@ -25,34 +30,10 @@ from rich.table import Table
 from rich import box
 
 from config import get_store
+from embedder import embed_text
 from models import Product
 
 console = Console()
-
-# ─── RQL query ──────────────────────────────────────────────────────────────
-#
-# vector.search(Description, $query) instructs RavenDB to:
-#   1. Generate an embedding for $query using bge-micro-v2 (built-in, no API key)
-#   2. Search the HNSW graph index on the Description field
-#   3. Return the closest matches by cosine similarity
-#
-# Combining vector search with a structured filter (Category) in a single query
-# is one of RavenDB's key advantages over standalone vector stores.
-#
-SEMANTIC_QUERY = """
-from Products
-where vector.search(Description, $query)
-order by score() desc
-limit $limit
-"""
-
-SEMANTIC_QUERY_WITH_CATEGORY = """
-from Products
-where vector.search(Description, $query)
-and Category = $category
-order by score() desc
-limit $limit
-"""
 
 
 def run_search(
@@ -60,25 +41,30 @@ def run_search(
     limit: int = 5,
     category: Optional[str] = None,
 ) -> list[Product]:
-    """Execute a semantic search and return matching Product documents."""
+    """Embed the query, execute a vector search, return matching Product documents."""
+    # Generate query embedding with bge-micro-v2 (same model used at seed time)
+    query_vector = embed_text(query_text).tolist()
+
     store = get_store()
-
     with store.open_session() as session:
-        if category:
-            rql = SEMANTIC_QUERY_WITH_CATEGORY
-        else:
-            rql = SEMANTIC_QUERY
-
-        raw = (
-            session.advanced.raw_query(rql, Product)
-            .add_parameter("query", query_text)
-            .add_parameter("limit", limit)
+        # Build the query using the Python client's vector_search API
+        q = (
+            session.query(object_type=Product)
+            .vector_search(
+                embedding_field="descriptionVector",
+                vector=query_vector,
+                minimum_similarity=0.0,
+                number_of_candidates=50,
+            )
+            .order_by_score()
+            .take(limit)
         )
 
+        # Add category filter if provided
         if category:
-            raw = raw.add_parameter("category", category)
+            q = q.where_equals("category", category)
 
-        return list(raw)
+        return list(q)
 
 
 def display_results(query: str, results: list[Product], category: Optional[str] = None) -> None:
@@ -104,7 +90,6 @@ def display_results(query: str, results: list[Product], category: Optional[str] 
     table.add_column("Description", style="dim", max_width=55)
 
     for i, product in enumerate(results, start=1):
-        # Truncate description for display
         desc = product.description
         if len(desc) > 120:
             desc = desc[:117] + "..."
@@ -133,7 +118,7 @@ def print_example_queries() -> None:
         ("track fitness and heart rate accurately", None),
         ("lightweight shelter for multi-day hiking", None),
         ("books for becoming a better programmer", None),
-        ("warm winter coat", "Clothing"),          # with category filter
+        ("warm winter coat", "Clothing"),
         ("muscle recovery after running", "Fitness"),
     ]
 
