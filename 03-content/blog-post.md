@@ -24,7 +24,7 @@ That's the shift from keyword search to semantic search. Simple concept; the imp
 
 
 ## How RavenDB Implements Vector Search
-![RavenDB Vector Search](https://imgur.com/xEUTBTR)
+![RavenDB Vector Search](https://imgur.com/a/B5avv7Y)
 
 Starting with **RavenDB 7.0**, vector search is built directly into the database. Not a plugin. Not a sidecar. It's part of the core indexing engine.
 
