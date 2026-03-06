@@ -25,7 +25,7 @@ That's the shift from keyword search to semantic search. Simple concept; the imp
 
 ## How RavenDB Implements Vector Search
 
-<img width="2752" height="1536" alt="unnamed" src="https://github.com/user-attachments/assets/20b5ed9d-e644-447d-963e-e54d708d5095" />
+<img width="2752" height="1536" alt="vector_search_ravendb" src="https://github.com/user-attachments/assets/20b5ed9d-e644-447d-963e-e54d708d5095" />
 
 Starting with **RavenDB 7.0**, vector search is built directly into the database. Not a plugin. Not a sidecar. It's part of the core indexing engine.
 
@@ -33,7 +33,6 @@ Under the hood, RavenDB uses **Corax**, its indexing engine, to build an **HNSW 
 
 You get vector search where your data already lives. No sync jobs, no consistency headaches, no extra infrastructure.
 
----
 
 ## Where Embeddings Come From
 
@@ -46,11 +45,10 @@ Before looking at queries, it helps to first understand how RavenDB generates em
 - **Ollama** (for local models)
 - **Mistral**
 
-The most interesting option, though, requires none of these. RavenDB ships with **bge-micro-v2** built in. It's a compact embedding model that runs entirely inside the database process. No API key. No network call. No rate limits. If you want semantic search today, you can have it without signing up for anything else or creating a data storage stack.
+The most interesting option, though, requires none of these. RavenDB ships with **bge-micro-v2** built in. It's a compact embedding model that runs entirely inside the database process. No API key. No network calls. No rate limits.
 
 For internal search, smaller datasets, or privacy-sensitive applications, it's all you need.
 
----
 
 ## Two Ways to Query
 
@@ -90,27 +88,25 @@ order by score() desc
 
 Semantic relevance combined with hard filters, one query, one system. That's the one that matters for real applications.
 
----
 
 ## The Operational Argument
 
 The standard approach to adding vector search goes like this: spin up a separate vector database, write a sync pipeline, figure out how to keep both systems consistent, then manage that forever.
 
-That's a real maintenance burden. Two systems means two failure modes, two scaling strategies, and eventual consistency problems that surface at the worst time.
+That's a real maintenance burden. Two systems mean two failure modes, two scaling strategies, and eventual consistency problems that surface at the worst time.
 
-With RavenDB, your operational database *is* your vector store. When a document updates, the vector index updates. You're not orchestrating two systems — you're running one. That matters most in:
+With RavenDB, your operational database *is* your vector store. When a document is updated, the vector index updates. You're not orchestrating two systems. You're running one. That matters most in:
 
-- **Search engines** — semantic relevance over your own content
-- **Recommendation systems** — find items similar to what a user engaged with
-- **RAG pipelines** — retrieve the right context chunks before sending to an LLM
+- **Search engines** - semantic relevance over your own content
+- **Recommendation systems** - find items similar to what a user engaged with
+- **RAG pipelines** - retrieve the right context chunks before sending to an LLM
 
 In all of these scenarios, you want your retrieval layer next to your data, not three network hops away.
 
----
 
 ## Building With It
 
-To see this in practice, I built a [product catalog demo](https://github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo) — 50 products seeded into RavenDB, searchable via a Python CLI using `vector.search()` with the built-in bge-micro-v2 model.
+To see this in practice, I built a [product catalog demo](https://github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo) with 50 products seeded into RavenDB, searchable via a Python CLI using `vector.search()` with the built-in bge-micro-v2 model.
 
 On the Python side, the RavenDB client exposes raw RQL through `session.advanced.raw_query()`. The whole search function is lean ([full source](https://github.com/rusiqe/ravendb-devrel-portfolio/blob/main/04-demo/search.py)):
 
@@ -131,7 +127,7 @@ with store.open_session() as session:
     )
 ```
 
-No embedding library. No separate vector client. The same session interface used for any other RavenDB query. Adding a category filter is one extra `and` clause in the RQL — the structured filter and vector search execute together inside RavenDB, no post-filtering on the client.
+No embedding library. No separate vector client. The same session interface is used for any other RavenDB query. Adding a category filter is one extra `and` clause in the RQL, the structured filter and vector search execute together inside RavenDB, no post-filtering on the client.
 
 Seeding the data is just a bulk insert ([seed.py](https://github.com/rusiqe/ravendb-devrel-portfolio/blob/main/04-demo/seed.py)). No schema changes, no pre-computation step:
 
@@ -152,11 +148,10 @@ The revealing part was running queries that share zero words with their matching
 | "muscle recovery after a run" | 0 results | TriggerPoint Foam Roller |
 | "books for becoming a better programmer" | 0 results | Clean Code, Designing Data-Intensive Apps |
 
-Every query in that table is something a real user would type. None of them share a single word with the product description that matched. That's the gap keyword search leaves open, and it's sitting right there in your existing data.
+Every query in that table is something a real user would type. None of them share a single word with the product description that matched. That's the gap keyword search leaves open, yet it's sitting right there in your existing data.
 
 Clone the demo and have it running in under five minutes: [github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo](https://github.com/rusiqe/ravendb-devrel-portfolio/tree/main/04-demo).
 
----
 
 ## Try It
 
@@ -164,6 +159,3 @@ If you're on RavenDB 7.0, a dynamic query is enough to get started — no index 
 
 The infrastructure question is already answered. What are you going to build with it?
 
----
-
-*Taurai is a technical writer and DevRel engineer. Find more at [taurai.eu](https://www.taurai.eu)*
