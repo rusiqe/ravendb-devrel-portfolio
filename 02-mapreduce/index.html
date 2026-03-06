@@ -153,6 +153,11 @@
     opacity: 0;
     transform: translateX(-40px);
   }
+  .slide.exit-right {
+    display: flex;
+    opacity: 0;
+    transform: translateX(40px);
+  }
 
   /* ── Typography ── */
   .slide-label {
@@ -870,14 +875,32 @@
   function go(to) {
     if (to < 0 || to >= total) return;
 
+    const goingForward = to > cur;
+
+    // Animate the leaving slide out
     const leaving = slides[cur];
     leaving.classList.remove('active');
-    leaving.classList.add(to > cur ? 'exit-left' : '');
-    setTimeout(() => leaving.classList.remove('exit-left'), 380);
+    leaving.classList.add(goingForward ? 'exit-left' : 'exit-right');
+    setTimeout(() => leaving.classList.remove('exit-left', 'exit-right'), 380);
 
     cur = to;
     const arriving = slides[cur];
-    arriving.classList.add('active');
+
+    if (!goingForward) {
+      // Start the arriving slide off-screen to the left, then transition in
+      arriving.style.transform = 'translateX(-40px)';
+      arriving.style.opacity   = '0';
+      arriving.style.display   = 'flex';
+      arriving.offsetHeight;   // force reflow so starting state is painted
+      arriving.classList.add('active');
+      requestAnimationFrame(() => {
+        arriving.style.transform = '';
+        arriving.style.opacity   = '';
+        arriving.style.display   = '';
+      });
+    } else {
+      arriving.classList.add('active');
+    }
 
     counter.textContent   = `${cur + 1} / ${total}`;
     progFill.style.width  = `${((cur + 1) / total) * 100}%`;
